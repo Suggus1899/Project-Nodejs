@@ -1,21 +1,54 @@
-const express = require('express');
-const path = require('path');
+var createError = require('http-errors');
+var express = require('express');
+var session = require('express-session');
+var path = require('path');
+var cookieParser = require('cookie-parser');
+var logger = require('morgan');
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+var indexRouter = require('./routes/index');
+var propietariosRouter = require('./routes/propietarios');
+var loginRouter = require('./routes/login');
+const welcomeRouter = require('./routes/welcome'); 
 
-// Configurar EJS como motor de plantillas
-app.set('view engine', 'ejs');
+
+var app = express();
+
+app.use(session({
+	secret: 'secret',
+	resave: true,
+	saveUninitialized: true
+}));
+
+// view engine setup
 app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'ejs');
 
-// Servir archivos estáticos
+app.use(logger('dev'));
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Importar rutas
-const routes = require('./routes/routes.js');
-app.use('/', routes);
+app.use('/', indexRouter);
+app.use('/propietarios', propietariosRouter);
+app.use('/login', loginRouter);
+app.use('/welcome', welcomeRouter); 
 
-// Iniciar el servidor
-app.listen(PORT, () => {
-    console.log(`Servidor corriendo en http://localhost:${PORT}`);
+
+// catch 404 and forward to error handler
+app.use(function(req, res, next) {
+next(createError(404));
 });
+
+// error handler
+app.use(function(err, req, res, next) {
+  // set locals, only providing error in development
+  res.locals.message = err.message;
+  res.locals.error = req.app.get('env') === 'development' ? err : {};
+
+  // render the error page
+  res.status(err.status || 500);
+  res.render('error');
+});
+
+module.exports = app;
